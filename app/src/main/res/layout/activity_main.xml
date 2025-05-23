@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name_poc"
+        style="@style/TitleTextStyle"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"/>
+
+    <ImageView
+        android:id="@+id/imageViewPreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/image_preview_description"
+        app:layout_constraintTop_toBottomOf="@id/textViewTitle"
+        app:layout_constraintBottom_toTopOf="@id/buttonProcessImage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/ic_placeholder_image_question" />
+
+    <Button
+        android:id="@+id/buttonProcessImage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_transform_to_sketch"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/buttonRecognizeAndSpeak"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="12dp"
+        style="@style/PrimaryActionButton" />
+
+    <Button
+        android:id="@+id/buttonRecognizeAndSpeak"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_recognize_and_speak"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/buttonSaveSketch"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="12dp"
+        style="@style/PrimaryActionButton" />
+
+    <Button
+        android:id="@+id/buttonSaveSketch"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_save_sketch"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/linearLayoutBottomButtons"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="20dp"
+        style="@style/PrimaryActionButton" />
+
+    <LinearLayout
+        android:id="@+id/linearLayoutBottomButtons"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/buttonOpenCamera"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/button_open_camera"
+            android:layout_marginEnd="8dp"
+            style="@style/SecondaryActionButton"/>
+
+        <Button
+            android:id="@+id/buttonOpenGallery"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/button_open_gallery"
+            android:layout_marginStart="8dp"
+            style="@style/SecondaryActionButton"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

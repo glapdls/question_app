@@ -1,0 +1,6 @@
+question.app.test.app-annotation-experimental-1.3.0-0 C:\Users\ahrin\.gradle\caches\8.11.1\transforms\2329e9548dacd856f98217ce9aa5e5da\transformed\annotation-experimental-1.3.0\res
+question.app.test.app-core-1.5.0-1 C:\Users\ahrin\.gradle\caches\8.11.1\transforms\d7d6603ad82162c024d9dfdd228e730d\transformed\core-1.5.0\res
+question.app.test.app-androidTest-2 C:\xampp\htdocs\question_app\app\build\generated\res\resValues\androidTest\debug
+question.app.test.app-mergeDebugAndroidTestResources-3 C:\xampp\htdocs\question_app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+question.app.test.app-mergeDebugAndroidTestResources-4 C:\xampp\htdocs\question_app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+question.app.test.app-debugAndroidTest-5 C:\xampp\htdocs\question_app\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

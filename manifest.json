@@ -1,0 +1,51 @@
+{
+    "name": "QUESTION - AI 사물 스케치 & 이름 찾기",
+    "short_name": "QUESTION",
+    "description": "아이들의 호기심을 채워주는 AI 기반 사물 스케치 및 이름 찾기 앱",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#4F46E5",
+    "theme_color": "#4F46E5",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "img/icons/question_icon_192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "img/icons/question_icon_512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "img/mockup_screen1.jpg",
+            "sizes": "1080x1920",
+            "type": "image/jpeg",
+            "platform": "narrow",
+            "label": "QUESTION 앱 스케치 변환 준비 화면"
+        },
+        {
+            "src": "img/mockup_screen2.jpg",
+            "sizes": "1080x1920",
+            "type": "image/jpeg",
+            "platform": "narrow",
+            "label": "QUESTION 앱 스케치 완성 및 색칠 화면"
+        },
+        {
+            "src": "img/mockup_screen3.jpg",
+            "sizes": "1080x1920",
+            "type": "image/jpeg",
+            "platform": "narrow",
+            "label": "QUESTION 앱 동물 이름 알려주기 화면"
+        }
+    ],
+    "categories": ["education", "kids", "utilities"],
+    "lang": "ko",
+    "dir": "ltr",
+    "prefer_related_applications": false
+} 

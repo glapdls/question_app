@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUESTION - AI 사물 스케치 &amp; 이름 찾기</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QUESTION">
+    <link rel="apple-touch-icon" href="img/icons/question_icon_192.png">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0" as="script">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.0.0" as="script">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style">
+    
+    <!-- Load styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Load scripts with defer -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.0.0" defer></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background-image: linear-gradient(to right, #4F46E5, #7C3AED); /* Indigo to Purple */
+        }
+        .feature-card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .cta-button {
+            transition: background-color 0.3s ease;
+        }
+        .screenshot-container {
+            display: flex;
+            flex-wrap: nowrap; /* 한 줄로 가로 스크롤 */
+            justify-content: flex-start;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem; /* 스크롤바 영역 확보 (선택적) */
+        }
+        .screenshot-item {
+            flex: 0 0 auto;
+            width: 240px; /* 기본 너비, 반응형에서 조정 가능 */
+            max-width: 280px;
+            min-width: 200px;
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        @media (max-width: 1024px) {
+            .screenshot-item {
+                width: 220px; /* 태블릿 크기에서의 너비 예시 */
+            }
+        }
+        @media (max-width: 640px) {
+            .screenshot-item {
+                width: 200px; /* 모바일 크기에서의 너비 예시 */
+            }
+        }
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            border-radius: 8px;
+        }
+        .social-login-button {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .social-login-button:hover {
+            transform: translateY(-2px);
+        }
+        /* PWA 설치 배너 스타일 */
+        #install-banner {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        /* 로딩 스피너 스타일 */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 토스트 메시지 스타일 */
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+            z-index: 50;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-success {
+            background-color: #10B981;
+        }
+        .toast-error {
+            background-color: #EF4444;
+        }
+        .toast-info {
+            background-color: #3B82F6;
+        }
+        /* 버튼 로딩 상태 스타일 */
+        .button-loading {
+            position: relative;
+            color: transparent !important;
+        }
+        .button-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="offline-indicator" class="hidden fixed top-0 left-0 right-0 p-3 bg-gray-700 text-white text-center z-[9999] text-sm transition-opacity duration-300">
+        현재 오프라인 상태입니다. 일부 기능이 제한될 수 있습니다.
+    </div>
+
+    <div id="install-banner" class="hidden fixed bottom-0 left-0 right-0 mb-4 mx-4 p-4 bg-indigo-600 text-white rounded-lg shadow-xl z-[9998] flex flex-col sm:flex-row justify-between items-center">
+        <span class="text-sm sm:text-base mb-2 sm:mb-0">QUESTION 앱을 홈 화면에 추가하고 더 편리하게 사용하세요!</span>
+        <button id="install-button" class="bg-white text-indigo-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-100 text-sm whitespace-nowrap">앱 설치하기</button>
+    </div>
+
+    <nav class="bg-white shadow-md fixed w-full z-10 top-0">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="#" class="flex items-center">
+                <img src="img/simbol.jpg" alt="QUESTION 앱 로고" class="navbar-logo mr-3">
+                <span class="text-2xl font-bold text-indigo-600 hidden sm:inline">QUESTION</span>
+            </a>
+            <div class="hidden md:flex space-x-4 items-center">
+                <a href="#features" class="text-gray-600 hover:text-indigo-600">주요 기능</a>
+                <a href="#how-it-works" class="text-gray-600 hover:text-indigo-600">사용 방법</a>
+                <a href="#preview" class="text-gray-600 hover:text-indigo-600">앱 미리보기</a>
+                <a href="#signup" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 cta-button">회원가입 / 시작하기</a>
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-gray-600 focus:outline-none" aria-expanded="false" aria-controls="mobile-menu">
+                    <i id="mobile-menu-icon" class="fas fa-bars text-2xl" aria-label="메뉴 열기"></i>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="md:hidden hidden bg-white shadow-lg">
+            <a href="#features" class="block px-6 py-3 text-gray-600 hover:bg-indigo-50">주요 기능</a>
+            <a href="#how-it-works" class="block px-6 py-3 text-gray-600 hover:bg-indigo-50">사용 방법</a>
+            <a href="#preview" class="block px-6 py-3 text-gray-600 hover:bg-indigo-50">앱 미리보기</a>
+            <a href="#signup" class="block px-6 py-3 bg-indigo-600 text-white text-center hover:bg-indigo-700 cta-button">회원가입 / 시작하기</a>
+        </div>
+    </nav>
+
+    <header class="hero-bg text-white pt-32 pb-20">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                눈 앞에 보이는 모든 것, <span class="text-yellow-300">스케치</span>하고 <span class="text-green-300">이름</span>도 알아보세요!
+            </h1>
+            <p class="text-lg md:text-xl mb-10 max-w-3xl mx-auto">
+                "QUESTION" 앱과 함께라면 아이들의 호기심이 즐거운 배움으로 이어집니다.
+                카메라로 비추기만 하세요! AI가 사물을 인식하여 스케치 도안을 만들고, 이름도 척척 알려줘요.
+            </p>
+            <a href="#features" class="bg-white text-indigo-700 font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-gray-100 text-lg cta-button">
+                자세히 알아보기 <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
+            </a>
+        </div>
+    </header>
+
+    <section id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-4">QUESTION 앱의 놀라운 기능</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-xl mx-auto">
+                아이들의 눈으로 세상을 탐험하고, 창의력과 지식을 함께 키워요!
+            </p>
+            <div class="grid md:grid-cols-2 gap-10">
+                <div class="bg-gray-50 p-8 rounded-xl shadow-lg feature-card">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-indigo-500 text-white p-3 rounded-full mr-4" aria-hidden="true">
+                            <i class="fas fa-pencil-ruler text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold">AI 스케치 마법사</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        주변의 어떤 사물이든 카메라로 비추면 AI가 즉시 멋진 스케치 도안으로 변환해줘요!
+                        아이들이 직접 색칠하며 관찰력과 표현력을 기를 수 있습니다. (예: 동물, 장난감, 음식 등)
+                    </p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-xl shadow-lg feature-card">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-green-500 text-white p-3 rounded-full mr-4" aria-hidden="true">
+                            <i class="fas fa-bullhorn text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold">"엄마, 이거 뭐야?" AI 이름표</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        "이 동물 이름이 뭐지?" 궁금할 땐 QUESTION 앱에게 물어보세요!
+                        카메라로 동물을 비추면 AI가 인식하고 정확한 이름을 음성으로 알려줍니다. (조류, 파충류, 포유류 등)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="py-20 bg-indigo-50">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">사용법도 간단해요!</h2>
+            <div class="grid md:grid-cols-3 gap-10 text-center">
+                <div class="p-6">
+                    <div class="bg-white inline-block p-6 rounded-full shadow-md mb-6" aria-hidden="true">
+                        <i class="fas fa-camera text-4xl text-indigo-500"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">1. 찰칵! 사물 비추기</h3>
+                    <p class="text-gray-600">궁금한 사물이나 그리고 싶은 대상을 앱 카메라로 비춰보세요.</p>
+                </div>
+                <div class="p-6">
+                    <div class="bg-white inline-block p-6 rounded-full shadow-md mb-6" aria-hidden="true">
+                        <i class="fas fa-brain text-4xl text-green-500"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">2. 똑똑! AI 인식</h3>
+                    <p class="text-gray-600">AI가 빠르게 사물을 인식하고, 스케치로 변환하거나 이름을 찾아줘요.</p>
+                </div>
+                <div class="p-6">
+                    <div class="bg-white inline-block p-6 rounded-full shadow-md mb-6" aria-hidden="true">
+                        <i class="fas fa-palette text-4xl text-pink-500"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">3. 짠! 결과 확인 &amp; 활용</h3>
+                    <p class="text-gray-600">멋진 스케치 도안에 색칠하거나, 사물의 이름을 음성으로 들어보세요!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Recognition Section -->
+    <section id="ai-recognition" class="py-20 bg-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-center mb-12">사물 인식 시작하기</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-xl mx-auto">
+                카메라로 사물을 비추거나 이미지를 업로드하여 AI에게 물어보세요!
+            </p>
+
+            <div class="max-w-2xl mx-auto bg-gray-100 p-6 rounded-lg shadow-lg">
+                <!-- Camera/Image Display Area -->
+                <div class="w-full h-96 bg-gray-300 rounded-md mb-6 flex items-center justify-center overflow-hidden">
+                    <video id="cameraFeed" class="hidden w-full h-full object-cover"></video>
+                    <img id="uploadedImage" class="hidden w-full h-full object-contain" alt="업로드된 이미지">
+                    <p id="placeholderText" class="text-gray-600">카메라를 켜거나 이미지를 업로드하세요.</p>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="startCameraBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 cta-button flex items-center">
+                        <i class="fas fa-camera mr-2"></i> 카메라 켜기
+                    </button>
+                    <input type="file" id="uploadImageInput" accept="image/*" class="hidden">
+                    <button id="uploadImageBtn" class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 cta-button flex items-center">
+                        <i class="fas fa-upload mr-2"></i> 이미지 업로드
+                    </button>
+                </div>
+                 <button id="captureBtn" class="hidden bg-purple-600 text-white px-6 py-3 rounded-md hover:bg-purple-700 cta-button w-full mb-4 flex items-center justify-center">
+                    <i class="fas fa-camera-retro mr-2"></i> 촬영하고 인식하기
+                </button>
+
+                <!-- Hidden canvas for capturing frames -->
+                <canvas id="captureCanvas" class="hidden"></canvas>
+
+                <!-- Recognition Result Area -->
+                <div id="recognitionResult" class="hidden bg-white p-6 rounded-md shadow-inner text-center">
+                    <h3 class="text-2xl font-bold mb-4 text-indigo-700">찾았어요!</h3>
+                    <p id="resultObjectName" class="text-4xl font-bold text-indigo-600 mb-2"></p> <!-- Object Name -->
+                    <p id="resultClassification" class="text-lg text-gray-700 mb-4"></p> <!-- Classification -->
+                    <p id="resultDescription" class="text-md text-gray-600 mb-4"></p> <!-- Description -->
+                    <button id="speakAgainBtn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"><i class="fas fa-volume-up mr-1"></i> 다시 듣기</button> <!-- Speak again button -->
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End AI Recognition Section -->
+
+    <!-- Sketching Feature Section -->
+    <section id="sketching" class="py-20 bg-indigo-50">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-center mb-12">나만의 스케치 그리기</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-xl mx-auto">
+                자유롭게 상상하며 나만의 사물을 스케치하고 AI에게 무엇인지 물어보세요!
+            </p>
+
+            <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+                <!-- Sketching Canvas -->
+                <canvas id="sketchCanvas" class="border border-gray-300 rounded-md w-full" style="aspect-ratio: 4/3;"></canvas>
+
+                <!-- Drawing Tools -->
+                <div class="mt-4 flex flex-wrap justify-center items-center gap-4">
+                    <!-- Color Picker -->
+                    <div class="flex items-center gap-2">
+                        <label for="colorPicker" class="font-semibold text-gray-700">색상:</label>
+                        <input type="color" id="colorPicker" value="#000000" class="w-8 h-8 rounded-md cursor-pointer">
+                         <!-- Basic Color Palette -->
+                         <div id="basicColorPalette" class="flex gap-1">
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #FF0000;" data-color="#FF0000" aria-label="빨간색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #FFA500;" data-color="#FFA500" aria-label="주황색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #FFFF00;" data-color="#FFFF00" aria-label="노란색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #008000;" data-color="#008000" aria-label="초록색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #0000FF;" data-color="#0000FF" aria-label="파란색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #4B0082;" data-color="#4B0082" aria-label="남색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #EE82EE;" data-color="#EE82EE" aria-label="보라색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #FFFFFF;" data-color="#FFFFFF" aria-label="흰색"></button>
+                             <button class="w-6 h-6 rounded-full border border-gray-300" style="background-color: #000000;" data-color="#000000" aria-label="검정색"></button>
+                         </div>
+                    </div>
+                    
+                    <!-- Brush Size -->
+                    <div class="flex items-center gap-2">
+                        <label for="brushSize" class="font-semibold text-gray-700">굵기:</label>
+                        <input type="range" id="brushSize" min="1" max="20" value="5" class="cursor-pointer">
+                    </div>
+
+                    <!-- Eraser Button -->
+                    <button id="eraserBtn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 flex items-center">
+                        <i class="fas fa-eraser mr-1"></i> 지우개
+                    </button>
+
+                    <!-- Clear Button -->
+                    <button id="clearCanvasBtn" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 flex items-center">
+                        <i class="fas fa-trash-alt mr-1"></i> 모두 지우기
+                    </button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex flex-wrap justify-center items-center gap-4">
+                    <button id="recognizeSketchBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 cta-button flex items-center">
+                        <i class="fas fa-brain mr-2"></i> 스케치 인식하기
+                    </button>
+                     <button id="saveSketchBtn" class="bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 flex items-center">
+                        <i class="fas fa-save mr-2"></i> 스케치 저장
+                    </button>
+                     <button id="shareSketchBtn" class="bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 flex items-center">
+                        <i class="fas fa-share-alt mr-2"></i> 스케치 공유
+                    </button>
+                </div>
+                 
+                 <!-- Sketch Recognition Result Area (can reuse or create new) -->
+                 <!-- For simplicity, we might reuse recognitionResult, but potentially with different display logic -->
+                 <div id="sketchRecognitionResult" class="hidden bg-white p-6 rounded-md shadow-inner text-center mt-6">
+                    <h3 class="text-2xl font-bold mb-4 text-indigo-700">스케치 인식 결과:</h3>
+                    <p id="sketchResultObjectName" class="text-4xl font-bold text-indigo-600 mb-2"></p> <!-- Object Name -->
+                    <p id="sketchResultClassification" class="text-lg text-gray-700 mb-4"></p> <!-- Classification -->
+                    <p id="sketchResultDescription" class="text-md text-gray-600 mb-4"></p> <!-- Description -->
+                    <button id="sketchSpeakAgainBtn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"><i class="fas fa-volume-up mr-1"></i> 다시 듣기</button> <!-- Speak again button -->
+                 </div>
+
+            </div>
+        </div>
+    </section>
+    <!-- End Sketching Feature Section -->
+
+    <section id="preview" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">앱 화면 미리보기</h2>
+            <div class="bg-gray-200 p-4 md:p-8 rounded-lg shadow-xl max-w-5xl mx-auto">
+                <div class="screenshot-container">
+                    <img src="img/mockup_screen1.jpg" alt="QUESTION 앱 스케치 변환 준비 화면 예시" class="screenshot-item" loading="lazy">
+                    <img src="img/mockup_screen2.jpg" alt="QUESTION 앱 스케치 완성 및 색칠 화면 예시" class="screenshot-item" loading="lazy">
+                    <img src="img/mockup_screen3.jpg" alt="QUESTION 앱 동물 이름 알려주기 화면 예시" class="screenshot-item" loading="lazy">
+                </div>
+                <p class="text-center mt-6 text-gray-600">아이들이 사용하기 쉽고 재미있는 인터페이스를 제공합니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="signup" class="py-20 bg-gradient-to-br from-purple-600 to-indigo-600 text-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">QUESTION 앱, 지금 바로 시작하세요!</h2>
+            <p class="text-lg md:text-xl mb-10 max-w-xl mx-auto">
+                간편하게 가입하고 아이들의 무한한 상상력과 호기심을 키워주세요.
+            </p>
+            
+            <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl text-gray-800">
+                <h3 class="text-2xl font-semibold mb-6 text-center">회원가입</h3>
+                <form action="#" method="POST" id="signupForm">
+                    <div class="mb-4">
+                        <label for="email-signup" class="block text-sm font-medium text-gray-700 text-left mb-1">이메일 주소</label>
+                        <input type="email" id="email-signup" name="email" placeholder="your_email@example.com" required
+                               class="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password-signup" class="block text-sm font-medium text-gray-700 text-left mb-1">비밀번호</label>
+                        <input type="password" id="password-signup" name="password" placeholder="********" required minlength="8"
+                               class="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold p-3 rounded-md cta-button">
+                        이메일로 가입하기
+                    </button>
+                </form>
+
+                <div class="my-6 flex items-center">
+                    <hr class="flex-grow border-gray-300">
+                    <span class="mx-4 text-gray-500 text-sm">또는</span>
+                    <hr class="flex-grow border-gray-300">
+                </div>
+
+                <div class="space-y-3">
+                    <button type="button" id="googleLoginBtn"
+                            class="w-full flex items-center justify-center bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium p-3 rounded-md social-login-button">
+                        <i class="fab fa-google text-red-500 mr-2"></i> 구글 계정으로 시작하기
+                    </button>
+                    <button type="button" id="kakaoLoginBtn"
+                            class="w-full flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 text-black font-medium p-3 rounded-md social-login-button">
+                        <i class="fas fa-comment text-black mr-2"></i> 카카오 계정으로 시작하기
+                    </button>
+                    <button type="button" id="naverLoginBtn"
+                            class="w-full flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-medium p-3 rounded-md social-login-button">
+                        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.213 15.426h-5.43v5.43h5.43v-5.43zm-6.274 0H4.509v5.43h5.43v-5.43zM16.213 8.574H4.509v5.43h11.704V8.574zM16.213 3.143h-5.43v5.43h5.43V3.143zM22.5 8.574h-4.865v5.43H22.5V8.574zM9.939 3.143H4.509v5.43h5.43V3.143z"/></svg>
+                        네이버 계정으로 시작하기
+                    </button>
+                </div>
+                <p class="mt-6 text-xs text-gray-500 text-center">
+                    이미 계정이 있으신가요? <a href="#login" class="text-indigo-600 hover:underline" id="showLogin">로그인</a>
+                </p>
+            </div>
+
+            <p class="mt-12 text-sm text-gray-200">
+                안드로이드 테스트 버전(APK)은 <a href="#" id="apkDownloadLink" class="underline hover:text-yellow-300">여기서 다운로드</a> 가능합니다. <span id="apkStatusText">(준비중)</span>
+            </p>
+        </div>
+    </section>
+    
+    <section id="login" class="hidden py-20 bg-gray-100">
+        <div class="container mx-auto px-6 text-center">
+             <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl text-gray-800">
+                <h3 class="text-2xl font-semibold mb-6 text-center">로그인</h3>
+                <form action="#" method="POST" id="loginForm">
+                    <div class="mb-4">
+                        <label for="email-login" class="block text-sm font-medium text-gray-700 text-left mb-1">이메일 주소</label>
+                        <input type="email" id="email-login" name="email" placeholder="your_email@example.com" required
+                               class="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password-login" class="block text-sm font-medium text-gray-700 text-left mb-1">비밀번호</label>
+                        <input type="password" id="password-login" name="password" placeholder="********" required
+                               class="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold p-3 rounded-md cta-button">
+                        로그인
+                    </button>
+                </form>
+                 <p class="mt-6 text-xs text-gray-500 text-center">
+                    계정이 없으신가요? <a href="#signup" class="text-indigo-600 hover:underline" id="showSignup">회원가입</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+
+    <footer class="bg-gray-800 text-gray-300 py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="mb-2">&copy; <span id="currentYear"></span> QUESTION. All Rights Reserved.</p>
+            <p class="text-sm">본 페이지는 데모 목적으로 제작되었습니다.</p>
+            <div class="mt-4">
+                <a href="#" class="text-gray-400 hover:text-white mx-2" aria-label="페이스북 페이지로 이동"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white mx-2" aria-label="인스타그램 페이지로 이동"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white mx-2" aria-label="트위터 페이지로 이동"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 유틸리티 함수들
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('button-loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('button-loading');
+                button.disabled = false;
+            }
+        }
+
+        function showLoadingSpinner(container) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            container.appendChild(spinner);
+            return spinner;
+        }
+
+        function hideLoadingSpinner(spinner) {
+            if (spinner && spinner.parentNode) {
+                spinner.parentNode.removeChild(spinner);
+            }
+        }
+
+        // 메모리 관리 유틸리티 개선
+        const memoryManager = {
+            // 캔버스 메모리 해제
+            clearCanvas(canvas) {
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        // 캔버스 크기를 최소화하여 메모리 사용량 감소
+                        canvas.width = 1;
+                        canvas.height = 1;
+                    }
+                }
+            },
+
+            // 이미지 메모리 해제
+            clearImageMemory(imageElement) {
+                if (imageElement) {
+                    // 이미지 소스 제거
+                    imageElement.src = '';
+                    imageElement.removeAttribute('src');
+                    // 이미지 데이터 해제
+                    if (imageElement.complete) {
+                        imageElement.onload = null;
+                        imageElement.onerror = null;
+                    }
+                }
+            },
+
+            // 스트림 정리
+            clearStream(stream) {
+                if (stream) {
+                    stream.getTracks().forEach(track => {
+                        track.stop();
+                        track.enabled = false;
+                    });
+                }
+            },
+
+            // 이미지 캐시 정리
+            async clearImageCache() {
+                if (window.caches) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => caches.delete(cacheName))
+                        );
+                    } catch (error) {
+                        console.error('Error clearing image cache:', error);
+                    }
+                }
+            },
+
+            // 주기적인 메모리 정리
+            startPeriodicCleanup(interval = 5 * 60 * 1000) { // 5분마다
+                setInterval(() => {
+                    this.clearImageCache();
+                    // 가비지 컬렉션 유도
+                    if (window.gc) {
+                        window.gc();
+                    }
+                }, interval);
+            }
+        };
+
+        // 이미지 최적화 유틸리티 개선
+        const imageOptimizer = {
+            // 이미지 크기 최적화
+            async optimizeImage(file, maxSize = 1024) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+
+                            // 이미지 크기가 maxSize보다 크면 비율 유지하며 축소
+                            if (width > maxSize || height > maxSize) {
+                                if (width > height) {
+                                    height = Math.round((height * maxSize) / width);
+                                    width = maxSize;
+                                } else {
+                                    width = Math.round((width * maxSize) / height);
+                                    height = maxSize;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // 품질 조정 (0.8 = 80% 품질)
+                            const optimizedData = canvas.toDataURL('image/jpeg', 0.8);
+                            
+                            // 메모리 정리
+                            memoryManager.clearCanvas(canvas);
+                            memoryManager.clearImageMemory(img);
+                            
+                            resolve(optimizedData);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        };
+
+        // 모바일 메뉴 토글
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuIcon = document.getElementById('mobile-menu-icon');
+
+        if (mobileMenuButton && mobileMenu && mobileMenuIcon) {
+            mobileMenuButton.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.toggle('hidden');
+                const isExpanded = !isHidden;
+                mobileMenuButton.setAttribute('aria-expanded', isExpanded.toString());
+
+                if (isExpanded) {
+                    mobileMenuIcon.classList.remove('fa-bars');
+                    mobileMenuIcon.classList.add('fa-times');
+                    mobileMenuIcon.setAttribute('aria-label', '메뉴 닫기');
+                } else {
+                    mobileMenuIcon.classList.remove('fa-times');
+                    mobileMenuIcon.classList.add('fa-bars');
+                    mobileMenuIcon.setAttribute('aria-label', '메뉴 열기');
+                }
+            });
+        }
+
+        // 네비게이션 링크 클릭 시 부드럽게 스크롤 및 모바일 메뉴 닫기
+        document.querySelectorAll('nav a[href^="#"], header a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetId = href;
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'false');
+                        mobileMenuIcon.classList.remove('fa-times');
+                        mobileMenuIcon.classList.add('fa-bars');
+                        mobileMenuIcon.setAttribute('aria-label', '메뉴 열기');
+                    }
+                }
+            });
+        });
+        
+        // 현재 연도 자동 업데이트 (푸터)
+        const currentYearElement = document.getElementById('currentYear');
+        if(currentYearElement) {
+            currentYearElement.textContent = new Date().getFullYear();
+        }
+
+        // 회원가입/로그인 폼 전환
+        const signupSection = document.getElementById('signup');
+        const loginSection = document.getElementById('login');
+        const showLoginLink = document.getElementById('showLogin');
+        const showSignupLink = document.getElementById('showSignup');
+
+        if (showLoginLink && loginSection && signupSection) {
+            showLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginSection.classList.remove('hidden');
+                loginSection.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+        if (showSignupLink && loginSection && signupSection) {
+             showSignupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginSection.classList.add('hidden');
+                signupSection.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        // 소셜 로그인 버튼 클릭 시 (실제 기능 연동 필요)
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const kakaoLoginBtn = document.getElementById('kakaoLoginBtn');
+        const naverLoginBtn = document.getElementById('naverLoginBtn');
+
+        if(googleLoginBtn) googleLoginBtn.addEventListener('click', () => { alert('구글 로그인 기능은 준비 중입니다.'); });
+        if(kakaoLoginBtn) kakaoLoginBtn.addEventListener('click', () => { alert('카카오 로그인 기능은 준비 중입니다.'); });
+        if(naverLoginBtn) naverLoginBtn.addEventListener('click', () => { alert('네이버 로그인 기능은 준비 중입니다.'); });
+
+        // 이메일 가입 폼 제출 (실제 기능 연동 필요)
+        const signupForm = document.getElementById('signupForm');
+        if (signupForm) {
+            signupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = this.elements.email.value;
+                alert(`'${email}' (으)로 가입 신청 기능은 준비 중입니다. 실제 서버 연동이 필요합니다.`);
+            });
+        }
+        // 로그인 폼 제출 (실제 기능 연동 필요)
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = this.elements.email.value;
+                alert(`'${email}' (으)로 로그인 기능은 준비 중입니다. 실제 서버 연동이 필요합니다.`);
+            });
+        }
+
+        // APK 다운로드 링크 처리
+        const apkDownloadLink = document.getElementById('apkDownloadLink');
+        const apkStatusText = document.getElementById('apkStatusText');
+        const isApkReady = false; // APK 준비 상태 (실제 준비되면 true로 변경)
+        const apkUrl = "download/question-latest.apk"; // 실제 APK 파일 경로
+
+        if (apkDownloadLink && apkStatusText) {
+            if (!isApkReady) {
+                apkDownloadLink.removeAttribute('href');
+                apkDownloadLink.classList.add('opacity-70', 'cursor-not-allowed');
+                apkDownloadLink.classList.remove('hover:text-yellow-300');
+                apkStatusText.textContent = '(현재 준비 중입니다. 잠시만 기다려주세요.)';
+                apkDownloadLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    alert('안드로이드 테스트 버전(APK)은 현재 준비 중입니다.');
+                });
+            } else {
+                apkDownloadLink.href = apkUrl; // 준비되었을 때 실제 링크 설정
+                apkStatusText.textContent = '(지금 바로 다운로드하세요!)';
+            }
+        }
+
+        // --- PWA 관련 스크립트 ---
+
+        // 1. 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js') // service-worker.js 파일 경로
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.error('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // 2. "홈 화면에 추가" (A2HS - Add to Home Screen) 프롬프트 처리
+        let deferredPrompt;
+        const installBanner = document.getElementById('install-banner');
+        const installButton = document.getElementById('install-button');
+
+        if (installBanner && installButton) {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // 기본 설치 프롬프트를 막습니다.
+                e.preventDefault();
+                // 나중에 트리거할 수 있도록 이벤트를 저장합니다.
+                deferredPrompt = e;
+                // 설치 배너를 보여줍니다. (이미 설치된 경우 등 조건 추가 가능)
+                if (!window.matchMedia('(display-mode: standalone)').matches) { // PWA로 실행 중이 아닐 때만
+                    installBanner.classList.remove('hidden');
+                }
+            });
+
+            installButton.addEventListener('click', async () => {
+                installBanner.classList.add('hidden'); // 배너 숨기기
+                if (deferredPrompt) {
+                    deferredPrompt.prompt(); // 저장된 프롬프트를 보여줍니다.
+                    // 사용자의 선택을 기다립니다.
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    if (outcome === 'accepted') {
+                        console.log('User accepted the A2HS prompt');
+                    } else {
+                        console.log('User dismissed the A2HS prompt');
+                    }
+                    deferredPrompt = null; // 프롬프트는 한 번만 사용할 수 있습니다.
+                }
+            });
+
+            window.addEventListener('appinstalled', () => {
+                installBanner.classList.add('hidden'); // 앱 설치 완료 시 배너 숨김
+                console.log('QUESTION PWA was installed.');
+            });
+        }
+
+        // 3. 오프라인 상태 감지 및 알림
+        const offlineIndicator = document.getElementById('offline-indicator');
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                offlineIndicator.classList.add('hidden');
+                offlineIndicator.classList.remove('opacity-100');
+            } else {
+                offlineIndicator.classList.remove('hidden');
+                setTimeout(() => offlineIndicator.classList.add('opacity-100'), 100); // 부드러운 표시
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus(); // 페이지 로드 시 초기 상태 확인
+
+        // --- AI Recognition Feature Script ---
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const uploadImageBtn = document.getElementById('uploadImageBtn');
+        const uploadImageInput = document.getElementById('uploadImageInput');
+        const captureBtn = document.getElementById('captureBtn');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const uploadedImage = document.getElementById('uploadedImage');
+        const placeholderText = document.getElementById('placeholderText');
+        const recognitionResult = document.getElementById('recognitionResult');
+        const resultObjectName = document.getElementById('resultObjectName');
+        const resultClassification = document.getElementById('resultClassification');
+        const resultDescription = document.getElementById('resultDescription');
+        const speakAgainBtn = document.getElementById('speakAgainBtn');
+
+        const captureCanvas = document.getElementById('captureCanvas');
+        const canvasContext = captureCanvas.getContext('2d');
+
+        let currentStream; // To keep track of the camera stream
+        let model; // To store the loaded MobileNet model
+
+        // Load MobileNet model
+        async function loadModel() {
+            try {
+                model = await mobilenet.load();
+                console.log('MobileNet model loaded successfully');
+            } catch (error) {
+                console.error('Error loading MobileNet model:', error);
+                alert('AI 모델 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // Load model when page loads
+        loadModel();
+
+        // 카메라 시작 버튼 클릭 이벤트
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                setButtonLoading(startCameraBtn, true);
+                
+                // 이전 스트림이 있다면 정리
+                if (currentStream) {
+                    stopCamera();
+                }
+
+                // 카메라 접근 권한 요청
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // 후면 카메라 우선
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+
+                currentStream = stream;
+                cameraFeed.srcObject = stream;
+                cameraFeed.classList.remove('hidden');
+                placeholderText.classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+                startCameraBtn.classList.add('hidden');
+
+                // 카메라 피드가 로드되면 자동 재생
+                cameraFeed.onloadedmetadata = () => {
+                    cameraFeed.play().catch(error => {
+                        console.error('Error playing camera feed:', error);
+                        showToast('카메라 피드 재생 중 오류가 발생했습니다.', 'error');
+                    });
+                };
+
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                let errorMessage = '카메라 접근 중 오류가 발생했습니다.';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = '카메라 접근 권한이 거부되었습니다. 브라우저 설정에서 카메라 접근을 허용해주세요.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = '카메라를 찾을 수 없습니다. 카메라가 연결되어 있는지 확인해주세요.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage = '카메라가 다른 애플리케이션에서 사용 중입니다.';
+                }
+                
+                showToast(errorMessage, 'error');
+                stopCamera();
+            } finally {
+                setButtonLoading(startCameraBtn, false);
+            }
+        });
+
+        // 카메라 정지 함수 개선
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                currentStream = null;
+            }
+            
+            if (cameraFeed) {
+                cameraFeed.srcObject = null;
+                cameraFeed.classList.add('hidden');
+            }
+            
+            if (placeholderText) {
+                placeholderText.classList.remove('hidden');
+            }
+            
+            if (captureBtn) {
+                captureBtn.classList.add('hidden');
+            }
+            
+            if (startCameraBtn) {
+                startCameraBtn.classList.remove('hidden');
+            }
+        }
+
+        // 페이지 언로드 시 카메라 정리
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // 페이지 로드 시 메모리 관리 시작
+        window.addEventListener('load', () => {
+            memoryManager.startPeriodicCleanup();
+        });
+
+        // 페이지 언로드 시 메모리 정리
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            memoryManager.clearCanvas(captureCanvas);
+            memoryManager.clearCanvas(sketchCanvas);
+            memoryManager.clearImageMemory(uploadedImage);
+            memoryManager.clearImageCache();
+        });
+
+        // 모바일 최적화 및 터치 이벤트 처리
+        const mobileOptimizer = {
+            // 터치 이벤트 처리
+            initializeTouchEvents(canvas) {
+                if (!canvas) return;
+
+                let isDrawing = false;
+                let lastX = 0;
+                let lastY = 0;
+
+                const ctx = canvas.getContext('2d');
+
+                // 터치 시작
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    isDrawing = true;
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    lastX = touch.clientX - rect.left;
+                    lastY = touch.clientY - rect.top;
+                }, { passive: false });
+
+                // 터치 이동
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (!isDrawing) return;
+
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    const currentX = touch.clientX - rect.left;
+                    const currentY = touch.clientY - rect.top;
+
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(currentX, currentY);
+                    ctx.stroke();
+
+                    lastX = currentX;
+                    lastY = currentY;
+                }, { passive: false });
+
+                // 터치 종료
+                canvas.addEventListener('touchend', () => {
+                    isDrawing = false;
+                });
+
+                // 터치 취소
+                canvas.addEventListener('touchcancel', () => {
+                    isDrawing = false;
+                });
+            },
+
+            // 모바일 기기 감지
+            isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            },
+
+            // 모바일 최적화 설정
+            applyMobileOptimizations() {
+                if (this.isMobileDevice()) {
+                    // 터치 이벤트 초기화
+                    this.initializeTouchEvents(sketchCanvas);
+
+                    // 모바일에서의 카메라 설정
+                    if (startCameraBtn) {
+                        startCameraBtn.addEventListener('click', async () => {
+                            try {
+                                const stream = await navigator.mediaDevices.getUserMedia({
+                                    video: {
+                                        facingMode: 'environment',
+                                        width: { ideal: 1280 },
+                                        height: { ideal: 720 }
+                                    }
+                                });
+                                // ... 기존 카메라 처리 코드 ...
+                            } catch (error) {
+                                console.error('Mobile camera error:', error);
+                                showToast('모바일 카메라 접근 중 오류가 발생했습니다.', 'error');
+                            }
+                        });
+                    }
+
+                    // 모바일에서의 스크롤 최적화
+                    document.querySelectorAll('.screenshot-container').forEach(container => {
+                        container.style.webkitOverflowScrolling = 'touch';
+                    });
+
+                    // 모바일에서의 버튼 크기 조정
+                    document.querySelectorAll('button').forEach(button => {
+                        button.style.minHeight = '44px'; // iOS 권장 최소 터치 영역
+                        button.style.minWidth = '44px';
+                    });
+                }
+            }
+        };
+
+        // 페이지 로드 시 모바일 최적화 적용
+        window.addEventListener('load', () => {
+            mobileOptimizer.applyMobileOptimizations();
+        });
+
+        // 화면 방향 변경 시 처리
+        window.addEventListener('orientationchange', () => {
+            // 캔버스 크기 재조정
+            if (sketchCanvas) {
+                const ctx = sketchCanvas.getContext('2d');
+                const imageData = ctx.getImageData(0, 0, sketchCanvas.width, sketchCanvas.height);
+                
+                sketchCanvas.width = sketchCanvas.offsetWidth;
+                sketchCanvas.height = sketchCanvas.offsetHeight;
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+            // 카메라 피드 재조정
+            if (cameraFeed && cameraFeed.srcObject) {
+                cameraFeed.style.width = '100%';
+                cameraFeed.style.height = 'auto';
+            }
+        });
+
+        // 회원가입 및 로그인 관련 기능
+        const authManager = {
+            // 사용자 상태 관리
+            userState: {
+                isLoggedIn: false,
+                userData: null
+            },
+
+            // 회원가입 처리
+            async handleSignup(event) {
+                event.preventDefault();
+                const form = event.target;
+                const email = form.elements.email.value;
+                const password = form.elements.password.value;
+
+                try {
+                    setButtonLoading(form.querySelector('button[type="submit"]'), true);
+                    
+                    // 실제 서버 연동 시 사용할 코드
+                    // const response = await fetch('/api/signup', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({ email, password })
+                    // });
+                    
+                    // 임시 성공 처리
+                    this.userState.isLoggedIn = true;
+                    this.userState.userData = { email };
+                    
+                    showToast('회원가입이 완료되었습니다!', 'success');
+                    this.updateUIForLoggedInUser();
+                    
+                    // 앱 설치 프롬프트 표시
+                    this.showInstallPrompt();
+                } catch (error) {
+                    console.error('Signup error:', error);
+                    showToast('회원가입 중 오류가 발생했습니다.', 'error');
+                } finally {
+                    setButtonLoading(form.querySelector('button[type="submit"]'), false);
+                }
+            },
+
+            // 로그인 처리
+            async handleLogin(event) {
+                event.preventDefault();
+                const form = event.target;
+                const email = form.elements.email.value;
+                const password = form.elements.password.value;
+
+                try {
+                    setButtonLoading(form.querySelector('button[type="submit"]'), true);
+                    
+                    // 실제 서버 연동 시 사용할 코드
+                    // const response = await fetch('/api/login', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({ email, password })
+                    // });
+                    
+                    // 임시 성공 처리
+                    this.userState.isLoggedIn = true;
+                    this.userState.userData = { email };
+                    
+                    showToast('로그인되었습니다!', 'success');
+                    this.updateUIForLoggedInUser();
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('로그인 중 오류가 발생했습니다.', 'error');
+                } finally {
+                    setButtonLoading(form.querySelector('button[type="submit"]'), false);
+                }
+            },
+
+            // 소셜 로그인 처리
+            async handleSocialLogin(provider) {
+                try {
+                    setButtonLoading(document.getElementById(`${provider}LoginBtn`), true);
+                    
+                    // 실제 소셜 로그인 연동 시 사용할 코드
+                    // const response = await fetch(`/api/auth/${provider}`, {
+                    //     method: 'POST'
+                    // });
+                    
+                    // 임시 성공 처리
+                    this.userState.isLoggedIn = true;
+                    this.userState.userData = { email: `${provider}@example.com` };
+                    
+                    showToast(`${provider} 계정으로 로그인되었습니다!`, 'success');
+                    this.updateUIForLoggedInUser();
+                } catch (error) {
+                    console.error(`${provider} login error:`, error);
+                    showToast(`${provider} 로그인 중 오류가 발생했습니다.`, 'error');
+                } finally {
+                    setButtonLoading(document.getElementById(`${provider}LoginBtn`), false);
+                }
+            },
+
+            // UI 업데이트
+            updateUIForLoggedInUser() {
+                const signupSection = document.getElementById('signup');
+                const loginSection = document.getElementById('login');
+                
+                if (this.userState.isLoggedIn) {
+                    // 로그인 상태 UI로 변경
+                    if (signupSection) signupSection.classList.add('hidden');
+                    if (loginSection) loginSection.classList.add('hidden');
+                    
+                    // 사용자 메뉴 표시
+                    this.showUserMenu();
+                }
+            },
+
+            // 사용자 메뉴 표시
+            showUserMenu() {
+                const userMenu = document.createElement('div');
+                userMenu.className = 'fixed top-16 right-4 bg-white shadow-lg rounded-lg p-4 z-50';
+                userMenu.innerHTML = `
+                    <div class="text-sm">
+                        <p class="font-semibold">${this.userState.userData.email}</p>
+                        <button id="logoutBtn" class="mt-2 text-red-600 hover:text-red-800">로그아웃</button>
+                    </div>
+                `;
+                document.body.appendChild(userMenu);
+
+                // 로그아웃 버튼 이벤트
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    this.handleLogout();
+                    userMenu.remove();
+                });
+            },
+
+            // 로그아웃 처리
+            handleLogout() {
+                this.userState.isLoggedIn = false;
+                this.userState.userData = null;
+                showToast('로그아웃되었습니다.', 'info');
+                window.location.reload();
+            }
+        };
+
+        // PWA 설치 관련 기능
+        const pwaManager = {
+            deferredPrompt: null,
+
+            // 설치 프롬프트 저장
+            saveInstallPrompt(event) {
+                event.preventDefault();
+                this.deferredPrompt = event;
+                this.showInstallBanner();
+            },
+
+            // 설치 배너 표시
+            showInstallBanner() {
+                const installBanner = document.getElementById('install-banner');
+                if (installBanner && !window.matchMedia('(display-mode: standalone)').matches) {
+                    installBanner.classList.remove('hidden');
+                }
+            },
+
+            // 앱 설치 처리
+            async handleInstall() {
+                if (!this.deferredPrompt) return;
+
+                try {
+                    setButtonLoading(document.getElementById('install-button'), true);
+                    this.deferredPrompt.prompt();
+                    const { outcome } = await this.deferredPrompt.userChoice;
+                    
+                    if (outcome === 'accepted') {
+                        showToast('앱이 설치되었습니다!', 'success');
+                    } else {
+                        showToast('앱 설치가 취소되었습니다.', 'info');
+                    }
+                } catch (error) {
+                    console.error('Installation error:', error);
+                    showToast('앱 설치 중 오류가 발생했습니다.', 'error');
+                } finally {
+                    setButtonLoading(document.getElementById('install-button'), false);
+                    this.deferredPrompt = null;
+                    document.getElementById('install-banner').classList.add('hidden');
+                }
+            }
+        };
+
+        // 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', () => {
+            // 회원가입 폼
+            const signupForm = document.getElementById('signupForm');
+            if (signupForm) {
+                signupForm.addEventListener('submit', (e) => authManager.handleSignup(e));
+            }
+
+            // 로그인 폼
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', (e) => authManager.handleLogin(e));
+            }
+
+            // 소셜 로그인 버튼
+            const socialProviders = ['google', 'kakao', 'naver'];
+            socialProviders.forEach(provider => {
+                const btn = document.getElementById(`${provider}LoginBtn`);
+                if (btn) {
+                    btn.addEventListener('click', () => authManager.handleSocialLogin(provider));
+                }
+            });
+
+            // PWA 설치 관련
+            window.addEventListener('beforeinstallprompt', (e) => pwaManager.saveInstallPrompt(e));
+            const installButton = document.getElementById('install-button');
+            if (installButton) {
+                installButton.addEventListener('click', () => pwaManager.handleInstall());
+            }
+        });
+
+        // 오프라인 지원
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(error => {
+                        console.error('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+
+    </script>
+</body>
+</html> 
